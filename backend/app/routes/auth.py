@@ -37,15 +37,21 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    msg = Message(
-        subject='Verify your Book-A-Meal account',
-        sender='noreply@bookmeal.com',
-        recipients=[email]
-    )
-    msg.body = f'Click the link to verify your account: http://localhost:5000/auth/verify/{verification_token}'
-    mail.send(msg)
+    try:
+        msg = Message(
+            subject='Verify your Book-A-Meal account',
+            sender='noreply@bookmeal.com',
+            recipients=[email]
+        )
+        msg.body = f'Click the link to verify your account: http://localhost:5000/auth/verify/{verification_token}'
+        mail.send(msg)
+    except Exception as e:
+        print(f"Email failed: {e}")
 
-    return jsonify({'message': 'Registration successful! Check your email to verify your account.'}), 201
+    return jsonify({
+        'message': 'Registration successful! Check your email to verify your account.',
+        'verification_token': verification_token
+    }), 201
 
 
 @auth_bp.route('/verify/<token>', methods=['GET'])
