@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app import db, mail
 from app.models.user import User
+from app.utils.date_utils import format_datetime
 import secrets
 from flask_mail import Message
 
@@ -94,7 +95,8 @@ def login():
             'id': user.id,
             'name': user.name,
             'email': user.email,
-            'role': user.role
+            'role': user.role,
+            'member_since': format_datetime(user.created_at)
         }
     }), 200
 
@@ -112,5 +114,6 @@ def get_current_user():
         'id': user.id,
         'name': user.name,
         'email': user.email,
-        'role': user.role
+        'role': user.role,
+        'member_since': format_datetime(user.created_at)
     }), 200
