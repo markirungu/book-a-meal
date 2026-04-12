@@ -21,6 +21,11 @@ function App() {
             <div>Admin Dashboard - Coming Soon</div>
           </ProtectedRoute>
         } />
+        <Route path="/admin/menu" element={
+          <ProtectedRoute adminOnly={true}>
+            <div>Menu Management - Coming Soon</div>
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   )

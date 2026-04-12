@@ -19,8 +19,13 @@ def create_app():
 
     with app.app_context():
         from app.models import user
+        from app.models import meal
         from app.routes.auth import auth_bp
+        from app.routes.meals import meals_bp
+        from app.routes.menu import menus_bp
         app.register_blueprint(auth_bp, url_prefix='/auth')
+        app.register_blueprint(meals_bp, url_prefix='/meals')
+        app.register_blueprint(menus_bp, url_prefix='/menus')
 
     @app.route("/")
     def index():
