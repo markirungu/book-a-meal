@@ -19,7 +19,7 @@ def create_app():
 
     with app.app_context():
         from app.models import user
-        from app.models import meal  # registers Meal, Menu, menu_meals with SQLAlchemy
+        from app.models import meal
         from app.routes.auth import auth_bp
         from app.routes.meals import meals_bp
         from app.routes.menu import menus_bp
