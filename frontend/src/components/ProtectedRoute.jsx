@@ -15,4 +15,5 @@ function ProtectedRoute({ children, adminOnly }) {
   return children
 }
 
+
 export default ProtectedRoute

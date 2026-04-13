@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
+
     <BrowserRouter>
       <Routes>
         {/* Public pages - anyone can visit */}
@@ -34,6 +35,7 @@ function App() {
         } />
       </Routes>
     </BrowserRouter>
+
   )
 }
 

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book-A-Meal - Order Meals Daily</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body id="app">
+    <div class="ambient ambient-left"></div>
+    <div class="ambient ambient-right"></div>
+
+    <nav class="frame-nav" aria-label="Prototype screens">
+      <button class="nav-chip is-active" data-target="screen-auth">Auth</button>
+      <button class="nav-chip" data-target="screen-customer">Customer</button>
+      <button class="nav-chip" data-target="screen-caterer">Caterer</button>
+      <button class="nav-chip" data-target="screen-revenue">Revenue</button>
+    </nav>
+
+    <main class="canvas">
+      <!-- AUTH SCREEN -->
+      <section class="screen is-active" id="screen-auth">
+        <div class="auth-center">
+          <div class="auth-card">
+            <div class="auth-header">
+              <h1 class="auth-title">Book-A-Meal</h1>
+              <p class="auth-tagline">Order delicious meals daily</p>
+            </div>
+
+            <form class="auth-form">
+              <label class="form-group">
+                <span class="form-label">Email</span>
+                <input
+                  type="email"
+                  class="form-input"
+                  placeholder="you@example.com"
+                  value="customer@example.com"
+                  readonly
+                />
+              </label>
+
+              <label class="form-group">
+                <span class="form-label">Password</span>
+                <input
+                  type="password"
+                  class="form-input"
+                  placeholder="••••••••"
+                  value="password"
+                  readonly
+                />
+              </label>
+
+              <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+
+            <div class="divider">
+              <span>Quick login for demo:</span>
+            </div>
+
+            <div class="quick-login">
+              <button class="btn-demo customer-demo" data-role="customer">
+                <span class="demo-icon">👥</span>
+                <span>As Customer</span>
+              </button>
+              <button class="btn-demo caterer-demo" data-role="caterer">
+                <span class="demo-icon">👨‍🍳</span>
+                <span>As Caterer</span>
+              </button>
+            </div>
+
+            <p class="auth-footer">No account? <a href="#signup">Sign up here</a></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CUSTOMER SCREEN -->
+      <section class="screen" id="screen-customer">
+        <div class="dashboard dashboard-customer">
+          <div class="dashboard-header">
+            <h2>Today's Menu</h2>
+            <p>Tuesday • Posted 8:12 AM</p>
+          </div>
+
+          <div class="menu-tabs">
+            <button class="menu-tab is-active">Mon</button>
+            <button class="menu-tab">Tue</button>
+            <button class="menu-tab">Wed</button>
+          </div>
+
+          <div class="specials-section">
+            <p class="section-header">Special Items</p>
+            <div class="meal-card highlight">
+              <div class="meal-info">
+                <h4>Happy Hour Chicken</h4>
+                <p>Grilled chicken, turmeric rice, fresh salad</p>
+              </div>
+              <span class="meal-price">KES 780</span>
+            </div>
+            <div class="meal-card">
+              <div class="meal-info">
+                <h4>Misheveve Bowl</h4>
+                <p>Traditional greens, maize mash, roast beef</p>
+              </div>
+              <span class="meal-price">KES 690</span>
+            </div>
+          </div>
+
+          <div class="menu-section">
+            <p class="section-header">General Menu</p>
+            <div class="meal-card">
+              <div class="meal-info">
+                <h4>Beef with rice</h4>
+                <p>Slow-cooked beef stew, pilau rice, salsa</p>
+              </div>
+              <span class="meal-price">KES 620</span>
+            </div>
+            <div class="meal-card is-selected">
+              <div class="meal-info">
+                <h4>Beef with fries</h4>
+                <p>Chef cut chips, black pepper beef, coleslaw</p>
+              </div>
+              <span class="meal-price">KES 650</span>
+            </div>
+            <div class="meal-card">
+              <div class="meal-info">
+                <h4>Tilapia Ugali</h4>
+                <p>Pan-fried tilapia, ugali wedges, greens butter</p>
+              </div>
+              <span class="meal-price">KES 820</span>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-primary">Confirm Meal Choice</button>
+            <button class="btn btn-secondary">Change Previous Order</button>
+          </div>
+
+          <div class="notification-box">
+            <p class="notif-label">Latest notification:</p>
+            <p class="notif-text">Menu for Tuesday has been set. Specials and general items now available.</p>
+            <span class="notif-time">08:12 AM</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATERER SCREEN -->
+      <section class="screen" id="screen-caterer">
+        <div class="dashboard dashboard-caterer">
+          <div class="dashboard-header">
+            <h2>Caterer Control Room</h2>
+            <p>Manage meals, set daily menus, view orders</p>
+          </div>
+
+          <div class="caterer-grid">
+            <div class="card">
+              <div class="card-header">
+                <h3>Meal Management</h3>
+                <button class="btn btn-small">+ Add Meal</button>
+              </div>
+              <div class="meal-table">
+                <div class="table-row header">
+                  <span>Meal Name</span>
+                  <span>Category</span>
+                  <span>Price</span>
+                  <span>Action</span>
+                </div>
+                <div class="table-row">
+                  <span>Beef with rice</span>
+                  <span>General</span>
+                  <span>KES 620</span>
+                  <span class="action-link">Edit | Delete</span>
+                </div>
+                <div class="table-row">
+                  <span>Happy Hour Chicken</span>
+                  <span>Special</span>
+                  <span>KES 780</span>
+                  <span class="action-link">Edit | Delete</span>
+                </div>
+                <div class="table-row">
+                  <span>Beef with fries</span>
+                  <span>General</span>
+                  <span>KES 650</span>
+                  <span class="action-link">Edit | Delete</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>Set Daily Menu</h3>
+                <span class="status-badge">Wednesday</span>
+              </div>
+              <div class="menu-builder">
+                <div class="builder-column">
+                  <p class="column-title">Available</p>
+                  <div class="builder-item">Chicken Pilau</div>
+                  <div class="builder-item">Chapati Beans</div>
+                  <div class="builder-item">Mishkaki Wrap</div>
+                  <div class="builder-item">Sweet Plantain Chicken</div>
+                </div>
+                <div class="builder-column focused">
+                  <p class="column-title">Wednesday Menu</p>
+                  <div class="builder-item special">✨ Sweet Plantain Chicken</div>
+                  <div class="builder-item">Chicken Pilau</div>
+                  <div class="builder-item">Chapati Beans</div>
+                  <div class="builder-item muted">+ Drop more items</div>
+                </div>
+              </div>
+              <div class="builder-actions">
+                <button class="btn btn-primary">Publish & Notify</button>
+                <button class="btn btn-secondary">Save Draft</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="recipe-section">
+            <h3>Recipe API Integration</h3>
+            <p class="section-desc">Connect to TheMealDB for meal ideas</p>
+            <div class="api-chips">
+              <span class="chip">Beef</span>
+              <span class="chip">Chicken</span>
+              <span class="chip">Seafood</span>
+              <span class="chip">Vegetarian</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REVENUE SCREEN -->
+      <section class="screen" id="screen-revenue">
+        <div class="dashboard dashboard-revenue">
+          <div class="dashboard-header">
+            <h2>End-of-Day Report</h2>
+            <p>Tuesday • Generated 6:30 PM</p>
+          </div>
+
+          <div class="revenue-cards">
+            <div class="stat-card">
+              <span class="stat-label">Orders Fulfilled</span>
+              <span class="stat-value">74</span>
+              <p class="stat-desc">Confirmed by admin kitchen team</p>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Gross Revenue</span>
+              <span class="stat-value">KES 48,260</span>
+              <p class="stat-desc">From fulfilled orders only</p>
+            </div>
+            <div class="stat-card warning">
+              <span class="stat-label">Refunds with Penalty</span>
+              <span class="stat-value">KES 2,140</span>
+              <p class="stat-desc">10% retained penalty on cancellations</p>
+            </div>
+          </div>
+
+          <div class="orders-overview">
+            <h3>Today's Orders</h3>
+            <div class="orders-table">
+              <div class="table-row header">
+                <span>Order ID</span>
+                <span>Customer</span>
+                <span>Meal</span>
+                <span>Status</span>
+                <span>Amount</span>
+              </div>
+              <div class="table-row">
+                <span>#903</span>
+                <span>Amina N.</span>
+                <span>Happy Hour Chicken</span>
+                <span class="status-fulfilled">✓ Fulfilled</span>
+                <span>KES 780</span>
+              </div>
+              <div class="table-row">
+                <span>#904</span>
+                <span>Brian M.</span>
+                <span>Beef with fries</span>
+                <span class="status-pending">⏳ In Prep</span>
+                <span>KES 650</span>
+              </div>
+              <div class="table-row">
+                <span>#905</span>
+                <span>Linet K.</span>
+                <span>Coconut Fish Curry</span>
+                <span class="status-refund">↩ Refunded</span>
+                <span>KES 920</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
