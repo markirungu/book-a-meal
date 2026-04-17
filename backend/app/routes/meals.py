@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models.user import User
-from app.models.meal import Meal
+from app.models.meals import Meal
 
 meals_bp = Blueprint('meals', __name__)
 
