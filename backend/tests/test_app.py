@@ -6,14 +6,14 @@ from app.models.user import User
 @pytest.fixture
 def app():
     """Create and configure a test app instance."""
-    app = create_app()
+    test_config = {
+        'TESTING': True,
+        'MAIL_SUPPRESS_SEND': True,
+        'JWT_SECRET_KEY': 'test-secret-key',
+        'SECRET_KEY': 'test-secret-key',
+    }
     
-    # Force test configuration
-    app.config['TESTING'] = True
-    app.config['MAIL_SUPPRESS_SEND'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['JWT_SECRET_KEY'] = 'test-secret-key'
-    app.config['SECRET_KEY'] = 'test-secret-key'
+    app = create_app(test_config=test_config)
     
     with app.app_context():
         db.create_all()

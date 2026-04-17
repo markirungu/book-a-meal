@@ -10,15 +10,19 @@ jwt = JWTManager()
 mail = Mail()
 migrate = Migrate()
 
-def create_app(config_class=None):
+def create_app(test_config=None):
     app = Flask(__name__)
     
     # Load default config
     app.config.from_object("app.config.Config")
     
-    # Allow tests to override config
-    if config_class:
-        app.config.from_object(config_class)
+    # Override with test config if provided
+    if test_config:
+        app.config.update(test_config)
+    
+    # Force SQLite if TESTING is True
+    if app.config.get('TESTING'):
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
 
     db.init_app(app)
     jwt.init_app(app)
