@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app  # ADDED current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app import db, mail
@@ -38,20 +38,27 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # UPDATED: Skip email sending in test mode
     try:
-        msg = Message(
-            subject='Verify your Book-A-Meal account',
-            sender='noreply@bookmeal.com',
-            recipients=[email]
-        )
-        msg.body = f'Click the link to verify your account: http://localhost:5000/auth/verify/{verification_token}'
-        mail.send(msg)
+        if not current_app.config.get('TESTING', False):
+            msg = Message(
+                subject='Verify your Book-A-Meal account',
+                sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@bookmeal.com'),
+                recipients=[email]
+            )
+            # Use FRONTEND_URL from config if available, fallback to localhost
+            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
+            msg.body = f'Click the link to verify your account: {frontend_url}/auth/verify/{verification_token}'
+            mail.send(msg)
+            print(f"Verification email sent to {email}")
+        else:
+            print(f"[TEST MODE] Would send verification email to {email}")
     except Exception as e:
-        print(f"Email failed: {e}")
+        print(f"Email sending failed (non-blocking): {e}")
 
     return jsonify({
         'message': 'Registration successful! Check your email to verify your account.',
-        'verification_token': verification_token
+        'verification_token': verification_token  # Remove this in production
     }), 201
 
 
