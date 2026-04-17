@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import date
 from app import db
 from app.models.user import User
-from app.models.meal import Meal, Menu
+from app.models.meals import Meal, Menu
 
 menus_bp = Blueprint('menus', __name__)
 
@@ -26,8 +26,8 @@ def create_menu():
         return err
 
     data = request.get_json()
-    menu_date_str = data.get('date')       # expected: "YYYY-MM-DD"
-    meal_ids = data.get('meal_ids', [])    # list of meal IDs to include
+    menu_date_str = data.get('date')
+    meal_ids = data.get('meal_ids', [])
 
     if not menu_date_str:
         return jsonify({'error': 'date is required (YYYY-MM-DD)'}), 400
@@ -39,7 +39,6 @@ def create_menu():
     except ValueError:
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
-    # Only one menu allowed per day
     if Menu.query.filter_by(date=menu_date).first():
         return jsonify({'error': f'A menu for {menu_date_str} already exists'}), 409
 
@@ -80,7 +79,7 @@ def get_menu(menu_id):
     return jsonify(menu.to_dict()), 200
 
 
-# ── PUT /menus/<id>  — admin updates a menu (swap meals or change date) ─────
+# ── PUT /menus/<id>  — admin updates a menu ─────────────────────────────────
 @menus_bp.route('/<int:menu_id>', methods=['PUT'])
 @jwt_required()
 def update_menu(menu_id):
@@ -96,7 +95,6 @@ def update_menu(menu_id):
             new_date = date.fromisoformat(data['date'])
         except ValueError:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
-        # Check uniqueness only if date is actually changing
         if new_date != menu.date and Menu.query.filter_by(date=new_date).first():
             return jsonify({'error': f'A menu for {data["date"]} already exists'}), 409
         menu.date = new_date
