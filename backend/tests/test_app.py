@@ -5,10 +5,15 @@ from app.models.user import User
 
 @pytest.fixture
 def app():
+    """Create and configure a test app instance."""
     app = create_app()
+    
+    # Force test configuration
     app.config['TESTING'] = True
-    app.config['MAIL_SUPPRESS_SEND'] = True  # ADDED: Prevents actual email sending
+    app.config['MAIL_SUPPRESS_SEND'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['JWT_SECRET_KEY'] = 'test-secret-key'
+    app.config['SECRET_KEY'] = 'test-secret-key'
     
     with app.app_context():
         db.create_all()
@@ -18,6 +23,7 @@ def app():
 
 @pytest.fixture
 def client(app):
+    """Test client for making requests."""
     return app.test_client()
 
 def test_register_success(client):
@@ -114,3 +120,37 @@ def test_verify_invalid_token(client):
 def test_protected_route_without_token(client):
     response = client.get('/auth/me')
     assert response.status_code == 401
+
+def test_register_invalid_role_defaults_to_customer(client):
+    """Invalid role should default to 'customer'"""
+    response = client.post('/auth/register',
+        json={
+            'name': 'Role Test',
+            'email': 'roletest@example.com',
+            'password': 'password123',
+            'role': 'hacker'
+        })
+    assert response.status_code == 201
+
+def test_me_endpoint_with_valid_token(client):
+    """GET /auth/me returns current user with valid token"""
+    # Register and verify
+    reg = client.post('/auth/register',
+        json={
+            'name': 'Me Test',
+            'email': 'me_test@example.com',
+            'password': 'password123'
+        })
+    token = json.loads(reg.data)['verification_token']
+    client.get(f'/auth/verify/{token}')
+    
+    # Login to get token
+    login = client.post('/auth/login',
+        json={'email': 'me_test@example.com', 'password': 'password123'})
+    access_token = json.loads(login.data)['access_token']
+    
+    # Test /me endpoint
+    response = client.get('/auth/me',
+        headers={'Authorization': f'Bearer {access_token}'})
+    assert response.status_code == 200
+    assert json.loads(response.data)['email'] == 'me_test@example.com'
