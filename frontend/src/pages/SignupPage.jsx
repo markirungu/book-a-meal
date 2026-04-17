@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 
-function LoginPage() {
+function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -15,12 +16,10 @@ function LoginPage() {
     setError('')
 
     try {
-      const response = await api.post('/auth/login', { email, password })
-      localStorage.setItem('token', response.data.token)
-      localStorage.setItem('role', response.data.role)
-      navigate('/menu')
+      await api.post('/auth/register', { username, email, password })
+      navigate('/login')
     } catch (err) {
-      setError('Invalid email or password. Please try again.')
+      setError('Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -28,11 +27,22 @@ function LoginPage() {
 
   return (
     <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
-      <h1>Login</h1>
+      <h1>Sign Up</h1>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '15px' }}>
+          <label>Username</label><br />
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+          />
+        </div>
+
         <div style={{ marginBottom: '15px' }}>
           <label>Email</label><br />
           <input
@@ -60,13 +70,13 @@ function LoginPage() {
           disabled={loading}
           style={{ width: '100%', padding: '10px', backgroundColor: 'blue', color: 'white', border: 'none', cursor: 'pointer' }}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Signing up...' : 'Sign Up'}
         </button>
       </form>
 
-      <p>Don't have an account? <a href="/signup">Sign up</a></p>
+      <p>Already have an account? <a href="/login">Login</a></p>
     </div>
   )
 }
 
-export default LoginPage
+export default SignupPage
