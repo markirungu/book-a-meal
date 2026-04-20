@@ -7,6 +7,46 @@ from app.models.meal import Meal
 meals_bp = Blueprint('meals', __name__)
 
 
+def validate_meal_data(data, is_update=False):
+    """Validate meal data and return (is_valid, error_message)"""
+    errors = []
+
+    if not is_update:
+        if 'name' not in data:
+            errors.append('name is required')
+        if 'price' not in data:
+            errors.append('price is required')
+
+    if 'name' in data:
+        name = data['name'].strip()
+        if not name:
+            errors.append('name cannot be empty')
+        elif len(name) > 100:
+            errors.append('name cannot exceed 100 characters')
+
+    if 'price' in data:
+        try:
+            price = float(data['price'])
+            if price <= 0:
+                errors.append('price must be greater than 0')
+            if price > 10000:
+                errors.append('price cannot exceed 10000')
+        except (ValueError, TypeError):
+            errors.append('price must be a valid number')
+
+    if 'description' in data:
+        description = data['description']
+        if description and len(description) > 255:
+            errors.append('description cannot exceed 255 characters')
+
+    if 'image_url' in data:
+        image_url = data['image_url']
+        if image_url and len(image_url) > 255:
+            errors.append('image_url cannot exceed 255 characters')
+
+    return len(errors) == 0, errors
+
+
 # ── helper: guard admin-only endpoints ──────────────────────────────────────
 def admin_required():
     """Returns (user, error_response). Call at the top of every admin route."""
@@ -26,16 +66,21 @@ def create_meal():
         return err
 
     data = request.get_json()
-    name = data.get('name')
-    price = data.get('price')
+    is_valid, errors = validate_meal_data(data)
+    if not is_valid:
+        return jsonify({'error': 'Validation failed', 'details': errors}), 400
 
-    if not name or price is None:
-        return jsonify({'error': 'name and price are required'}), 400
+    name = data.get('name').strip()
+    price = float(data.get('price'))
+
+    # Check for duplicate names
+    if Meal.query.filter_by(name=name).first():
+        return jsonify({'error': 'A meal with this name already exists'}), 409
 
     meal = Meal(
         name=name,
         description=data.get('description'),
-        price=float(price),
+        price=price,
         image_url=data.get('image_url')
     )
     db.session.add(meal)
@@ -71,10 +116,24 @@ def update_meal(meal_id):
     meal = Meal.query.get_or_404(meal_id)
     data = request.get_json()
 
-    meal.name = data.get('name', meal.name)
-    meal.description = data.get('description', meal.description)
-    meal.price = float(data.get('price', meal.price))
-    meal.image_url = data.get('image_url', meal.image_url)
+    is_valid, errors = validate_meal_data(data, is_update=True)
+    if not is_valid:
+        return jsonify({'error': 'Validation failed', 'details': errors}), 400
+
+    # Check for duplicate names (excluding current meal)
+    if 'name' in data:
+        new_name = data['name'].strip()
+        existing_meal = Meal.query.filter_by(name=new_name).first()
+        if existing_meal and existing_meal.id != meal_id:
+            return jsonify({'error': 'A meal with this name already exists'}), 409
+        meal.name = new_name
+
+    if 'description' in data:
+        meal.description = data['description']
+    if 'price' in data:
+        meal.price = float(data['price'])
+    if 'image_url' in data:
+        meal.image_url = data['image_url']
 
     db.session.commit()
     return jsonify({'message': 'Meal updated', 'meal': meal.to_dict()}), 200

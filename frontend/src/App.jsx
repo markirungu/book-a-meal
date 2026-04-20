@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 function App() {
   const [apiBase, setApiBase] = useState('http://127.0.0.1:5000')
   const [token, setToken] = useState('')
-  const [menus, setMenus] = useState([])
-  const [meals, setMeals] = useState([])
+  const [orders, setOrders] = useState([])
+  const [orderHistory, setOrderHistory] = useState([])
   const [todayMenu, setTodayMenu] = useState(null)
   const [status, setStatus] = useState('Set API URL and JWT, then click Refresh Data.')
   const [busy, setBusy] = useState(false)
@@ -15,6 +15,12 @@ function App() {
   const [editingMenuId, setEditingMenuId] = useState(null)
   const [editDate, setEditDate] = useState('')
   const [editMealIds, setEditMealIds] = useState([])
+
+  const [selectedMealForOrder, setSelectedMealForOrder] = useState('')
+  const [orderQuantity, setOrderQuantity] = useState(1)
+  const [editingOrderId, setEditingOrderId] = useState(null)
+  const [editOrderMealId, setEditOrderMealId] = useState('')
+  const [editOrderQuantity, setEditOrderQuantity] = useState(1)
 
   useEffect(() => {
     document.body.style.margin = '0'
@@ -199,12 +205,19 @@ function App() {
     }
 
     setBusy(true)
-    setStatus('Loading meals and menus...')
+    setStatus('Loading data...')
 
     try {
-      const [menuData, mealData] = await Promise.all([request('/menus'), request('/meals')])
-      setMenus(menuData)
+      const [menuData, mealData, orderData, historyData] = await Promise.all([
+        request('/menus'),
+        request('/meals'),
+        request('/orders'),
+        request('/orders/history')
+      ])
+      setMenus(menuData.menus || menuData)
       setMeals(mealData)
+      setOrders(orderData.orders || orderData)
+      setOrderHistory(historyData.orders || historyData)
 
       try {
         const today = await request('/menus/today')
@@ -213,7 +226,7 @@ function App() {
         setTodayMenu(null)
       }
 
-      setStatus('Loaded menu and meal data successfully.')
+      setStatus('Loaded all data successfully.')
     } catch (error) {
       setStatus(error.message)
     } finally {
@@ -302,6 +315,86 @@ function App() {
       await request(`/menus/${menuId}`, { method: 'DELETE' })
       await refreshData()
       setStatus('Menu deleted successfully.')
+    } catch (error) {
+      setStatus(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const placeOrder = async () => {
+    if (!selectedMealForOrder || orderQuantity < 1) {
+      setStatus('Select a meal and valid quantity.')
+      return
+    }
+
+    setBusy(true)
+    setStatus('Placing order...')
+
+    try {
+      await request('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          meal_id: parseInt(selectedMealForOrder),
+          quantity: orderQuantity
+        })
+      })
+      setSelectedMealForOrder('')
+      setOrderQuantity(1)
+      await refreshData()
+      setStatus('Order placed successfully.')
+    } catch (error) {
+      setStatus(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const beginEditOrder = (order) => {
+    setEditingOrderId(order.id)
+    setEditOrderMealId(order.meal_id.toString())
+    setEditOrderQuantity(order.quantity)
+  }
+
+  const saveOrderEdit = async () => {
+    if (!editingOrderId) {
+      return
+    }
+    if (!editOrderMealId || editOrderQuantity < 1) {
+      setStatus('Select a meal and valid quantity.')
+      return
+    }
+
+    setBusy(true)
+    setStatus('Updating order...')
+
+    try {
+      await request(`/orders/${editingOrderId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          meal_id: parseInt(editOrderMealId),
+          quantity: editOrderQuantity
+        })
+      })
+      setEditingOrderId(null)
+      setEditOrderMealId('')
+      setEditOrderQuantity(1)
+      await refreshData()
+      setStatus('Order updated successfully.')
+    } catch (error) {
+      setStatus(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancelOrder = async (orderId) => {
+    setBusy(true)
+    setStatus('Cancelling order...')
+    try {
+      await request(`/orders/${orderId}`, { method: 'DELETE' })
+      await refreshData()
+      setStatus('Order cancelled successfully.')
     } catch (error) {
       setStatus(error.message)
     } finally {
@@ -464,6 +557,147 @@ function App() {
               </article>
             ))}
             {menus.length === 0 && <p>No menus available. Create one above.</p>}
+          </div>
+        </section>
+
+        <section style={styles.card}>
+          <h2 style={styles.cardTitle}>Place Order</h2>
+          {!todayMenu && <p>No menu available for today. Cannot place orders.</p>}
+          {todayMenu && (
+            <>
+              <div style={styles.row}>
+                <div>
+                  <label style={styles.label}>Select Meal</label>
+                  <select
+                    style={styles.input}
+                    value={selectedMealForOrder}
+                    onChange={(event) => setSelectedMealForOrder(event.target.value)}
+                  >
+                    <option value="">Choose a meal...</option>
+                    {todayMenu.meals.map((meal) => (
+                      <option key={meal.id} value={meal.id}>
+                        {meal.name} - KES {Number(meal.price).toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={styles.label}>Quantity</label>
+                  <input
+                    style={styles.input}
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={orderQuantity}
+                    onChange={(event) => setOrderQuantity(parseInt(event.target.value) || 1)}
+                  />
+                </div>
+              </div>
+              <div style={styles.buttonRow}>
+                <button style={{ ...styles.button, ...styles.buttonPrimary }} onClick={placeOrder} disabled={busy}>
+                  Place Order
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+
+        <section style={styles.card}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.cardTitle}>My Orders</h2>
+            <span>{orders.length} active order(s)</span>
+          </div>
+          <div style={styles.menuList}>
+            {orders.map((order) => (
+              <article key={order.id} style={styles.menuItem}>
+                <strong>Order #{order.id}</strong> - {order.status}
+                <div style={styles.mealTagWrap}>
+                  <span style={styles.mealTag}>
+                    {order.meal?.name} x{order.quantity} - KES {(order.meal?.price * order.quantity || 0).toFixed(2)}
+                  </span>
+                </div>
+                <small>Ordered: {new Date(order.created_at).toLocaleString()}</small>
+
+                {editingOrderId === order.id ? (
+                  <div style={{ marginTop: '12px' }}>
+                    <label style={styles.label}>Change Meal</label>
+                    <select
+                      style={styles.input}
+                      value={editOrderMealId}
+                      onChange={(event) => setEditOrderMealId(event.target.value)}
+                    >
+                      <option value="">Choose a meal...</option>
+                      {todayMenu?.meals.map((meal) => (
+                        <option key={meal.id} value={meal.id}>
+                          {meal.name} - KES {Number(meal.price).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                    <label style={styles.label}>Quantity</label>
+                    <input
+                      style={styles.input}
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={editOrderQuantity}
+                      onChange={(event) => setEditOrderQuantity(parseInt(event.target.value) || 1)}
+                    />
+                    <div style={styles.buttonRow}>
+                      <button style={{ ...styles.button, ...styles.buttonPrimary }} onClick={saveOrderEdit} disabled={busy}>
+                        Save Changes
+                      </button>
+                      <button
+                        style={{ ...styles.button, ...styles.buttonSecondary }}
+                        onClick={() => {
+                          setEditingOrderId(null)
+                          setEditOrderMealId('')
+                          setEditOrderQuantity(1)
+                        }}
+                        disabled={busy}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={styles.buttonRow}>
+                    {order.status === 'pending' && (
+                      <>
+                        <button style={{ ...styles.button, ...styles.buttonSecondary }} onClick={() => beginEditOrder(order)} disabled={busy}>
+                          Change Order
+                        </button>
+                        <button style={{ ...styles.button, ...styles.buttonDanger }} onClick={() => cancelOrder(order.id)} disabled={busy}>
+                          Cancel Order
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </article>
+            ))}
+            {orders.length === 0 && <p>No active orders.</p>}
+          </div>
+        </section>
+
+        <section style={styles.card}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.cardTitle}>Order History</h2>
+            <span>{orderHistory.length} total order(s)</span>
+          </div>
+          <div style={styles.menuList}>
+            {orderHistory.map((order) => (
+              <article key={order.id} style={styles.menuItem}>
+                <strong>Order #{order.id}</strong> - {order.status}
+                <div style={styles.mealTagWrap}>
+                  <span style={styles.mealTag}>
+                    {order.meal?.name} x{order.quantity} - KES {(order.meal?.price * order.quantity || 0).toFixed(2)}
+                  </span>
+                </div>
+                <small>Ordered: {new Date(order.created_at).toLocaleString()}</small>
+                <small>Status: {order.status}</small>
+              </article>
+            ))}
+            {orderHistory.length === 0 && <p>No order history.</p>}
           </div>
         </section>
       </div>
