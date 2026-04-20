@@ -3,6 +3,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models.user import User
 from app.models.meals import Meal
+from app.services.recipe_service import search_public_recipes
+from app.utils.validators import parse_int
 
 meals_bp = Blueprint('meals', __name__)
 
@@ -17,6 +19,28 @@ def admin_required():
     return user, None
 
 
+def validate_meal_payload(data, partial=False):
+    errors = []
+    if not partial and not data.get('name'):
+        errors.append('name is required')
+    if not partial and data.get('price') is None:
+        errors.append('price is required')
+
+    if data.get('name') and len(data.get('name')) > 100:
+        errors.append('name must be <= 100 characters')
+    if data.get('description') and len(data.get('description')) > 255:
+        errors.append('description must be <= 255 characters')
+
+    if data.get('price') is not None:
+        try:
+            if float(data.get('price')) <= 0:
+                errors.append('price must be greater than 0')
+        except (TypeError, ValueError):
+            errors.append('price must be numeric')
+
+    return errors
+
+
 # ── POST /meals  — create a meal option ─────────────────────────────────────
 @meals_bp.route('', methods=['POST'])
 @jwt_required()
@@ -26,17 +50,22 @@ def create_meal():
         return err
 
     data = request.get_json()
-    name = data.get('name')
-    price = data.get('price')
+    errors = validate_meal_payload(data)
+    if errors:
+        return jsonify({'error': 'Validation failed', 'details': errors}), 400
 
-    if not name or price is None:
-        return jsonify({'error': 'name and price are required'}), 400
+    existing = Meal.query.filter_by(name=data.get('name')).first()
+    if existing:
+        return jsonify({'error': 'Meal with this name already exists'}), 409
 
     meal = Meal(
-        name=name,
+        caterer_id=user.caterer_id,
+        name=data.get('name').strip(),
         description=data.get('description'),
-        price=float(price),
-        image_url=data.get('image_url')
+        price=float(data.get('price')),
+        image_url=data.get('image_url'),
+        ingredients=data.get('ingredients', []),
+        recipe_source=data.get('recipe_source')
     )
     db.session.add(meal)
     db.session.commit()
@@ -48,7 +77,11 @@ def create_meal():
 @meals_bp.route('', methods=['GET'])
 @jwt_required()
 def get_meals():
-    meals = Meal.query.order_by(Meal.name).all()
+    caterer_id = parse_int(request.args.get('caterer_id'))
+    query = Meal.query
+    if caterer_id:
+        query = query.filter_by(caterer_id=caterer_id)
+    meals = query.order_by(Meal.name).all()
     return jsonify([m.to_dict() for m in meals]), 200
 
 
@@ -69,12 +102,22 @@ def update_meal(meal_id):
         return err
 
     meal = Meal.query.get_or_404(meal_id)
-    data = request.get_json()
+    if meal.caterer_id and user.caterer_id and meal.caterer_id != user.caterer_id:
+        return jsonify({'error': 'Cannot modify another caterer\'s meal'}), 403
 
-    meal.name = data.get('name', meal.name)
+    data = request.get_json()
+    errors = validate_meal_payload(data, partial=True)
+    if errors:
+        return jsonify({'error': 'Validation failed', 'details': errors}), 400
+
+    meal.name = data.get('name', meal.name).strip() if data.get('name') else meal.name
     meal.description = data.get('description', meal.description)
     meal.price = float(data.get('price', meal.price))
     meal.image_url = data.get('image_url', meal.image_url)
+    if 'ingredients' in data:
+        meal.ingredients = data.get('ingredients') or []
+    if 'recipe_source' in data:
+        meal.recipe_source = data.get('recipe_source')
 
     db.session.commit()
     return jsonify({'message': 'Meal updated', 'meal': meal.to_dict()}), 200
@@ -89,6 +132,21 @@ def delete_meal(meal_id):
         return err
 
     meal = Meal.query.get_or_404(meal_id)
+    if meal.caterer_id and user.caterer_id and meal.caterer_id != user.caterer_id:
+        return jsonify({'error': 'Cannot delete another caterer\'s meal'}), 403
+
     db.session.delete(meal)
     db.session.commit()
     return jsonify({'message': 'Meal deleted'}), 200
+
+
+@meals_bp.route('/recipes/search', methods=['GET'])
+@jwt_required()
+def search_recipes():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({'error': 'q is required'}), 400
+    try:
+        return jsonify({'results': search_public_recipes(query)}), 200
+    except Exception as exc:
+        return jsonify({'error': f'Recipe API failed: {str(exc)}'}), 502

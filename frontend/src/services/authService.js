@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const API_URL = 'https://book-a-meal-backend.onrender.com'
+const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
+const API_URL = viteEnv.VITE_API_URL || 'http://127.0.0.1:5000'
 
 const api = axios.create({
   baseURL: API_URL,

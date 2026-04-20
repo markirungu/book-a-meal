@@ -1,7 +1,9 @@
 import axios from 'axios'
 
+const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
+
 const api = axios.create({
-  baseURL: 'https://book-a-meal-backend.onrender.com',
+  baseURL: viteEnv.VITE_API_URL || 'http://127.0.0.1:5000',
 })
 
 api.interceptors.request.use((config) => {
@@ -12,4 +14,4 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-export default api// Force redeploy
+export default api

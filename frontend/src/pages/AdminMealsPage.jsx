@@ -8,6 +8,9 @@ function AdminMealsPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
+  const [ingredients, setIngredients] = useState('')
+  const [recipeQuery, setRecipeQuery] = useState('')
+  const [recipeResults, setRecipeResults] = useState([])
 
   useEffect(() => {
     api.get('/meals')
@@ -24,15 +27,39 @@ function AdminMealsPage() {
   const handleAddMeal = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/meals', { name, description, price })
+      await api.post('/meals', {
+        name,
+        description,
+        price,
+        ingredients: ingredients.split(',').map((x) => x.trim()).filter(Boolean),
+      })
       setName('')
       setDescription('')
       setPrice('')
+      setIngredients('')
       const response = await api.get('/meals')
       setMeals(response.data)
     } catch {
       setError('Could not add meal. Please try again.')
     }
+  }
+
+  const handleRecipeSearch = async () => {
+    if (!recipeQuery.trim()) {
+      return
+    }
+    try {
+      const response = await api.get('/meals/recipes/search', { params: { q: recipeQuery } })
+      setRecipeResults(response.data.results || [])
+    } catch {
+      setError('Recipe search failed.')
+    }
+  }
+
+  const importRecipe = (recipe) => {
+    setName(recipe.name || '')
+    setDescription(recipe.description || '')
+    setIngredients((recipe.ingredients || []).join(', '))
   }
 
   const handleDelete = async (id) => {
@@ -53,6 +80,33 @@ function AdminMealsPage() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <h2>Add New Meal</h2>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          value={recipeQuery}
+          onChange={(e) => setRecipeQuery(e.target.value)}
+          placeholder="Search public recipe API..."
+          style={{ flex: 1, minWidth: '220px', padding: '8px', border: '1px solid #94a3b8', borderRadius: '6px' }}
+        />
+        <button onClick={handleRecipeSearch} type="button" style={{ padding: '8px 14px', border: 'none', borderRadius: '6px', background: '#0f766e', color: '#fff', cursor: 'pointer' }}>
+          Search Recipes
+        </button>
+      </div>
+
+      {recipeResults.length > 0 && (
+        <div style={{ marginBottom: '14px', display: 'grid', gap: '8px' }}>
+          {recipeResults.slice(0, 5).map((recipe) => (
+            <div key={recipe.external_id} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', background: '#fff' }}>
+              <strong>{recipe.name}</strong>
+              <p style={{ margin: '4px 0' }}>{recipe.description}</p>
+              <button type="button" onClick={() => importRecipe(recipe)} style={{ padding: '6px 10px', border: 'none', borderRadius: '6px', background: '#1d4ed8', color: '#fff', cursor: 'pointer' }}>
+                Use Recipe
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={handleAddMeal}>
         <div style={{ marginBottom: '10px' }}>
           <label>Meal Name</label><br />
@@ -71,6 +125,15 @@ function AdminMealsPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
+            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+          />
+        </div>
+        <div style={{ marginBottom: '10px' }}>
+          <label>Ingredients (comma separated)</label><br />
+          <input
+            type="text"
+            value={ingredients}
+            onChange={(e) => setIngredients(e.target.value)}
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
           />
         </div>

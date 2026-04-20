@@ -37,15 +37,23 @@ def create_app(test_config=None):
 
     with app.app_context():
         from app.models import user
+        from app.models import caterer
         from app.models import meals
+        from app.models import order
+        from app.models import refund
+        from app.models import notification
         from app.routes.auth import auth_bp
+        from app.routes.caterers import caterers_bp
         from app.routes.meals import meals_bp
         from app.routes.menu import menus_bp
+        from app.routes.orders import orders_bp
         from app.routes.notifications import notifications_bp
         
         app.register_blueprint(auth_bp, url_prefix='/auth')
+        app.register_blueprint(caterers_bp, url_prefix='/caterers')
         app.register_blueprint(meals_bp, url_prefix='/meals')
         app.register_blueprint(menus_bp, url_prefix='/menus')
+        app.register_blueprint(orders_bp, url_prefix='/orders')
         app.register_blueprint(notifications_bp, url_prefix='/notifications')
 
     @app.route("/")

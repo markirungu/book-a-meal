@@ -17,6 +17,8 @@ def register():
     email = data.get('email')
     password = data.get('password')
     role = data.get('role', 'customer')
+    if role not in ['customer', 'admin']:
+        role = 'customer'
 
     if not name or not email or not password:
         return jsonify({'error': 'Name, email and password are required'}), 400
@@ -103,6 +105,7 @@ def login():
             'name': user.name,
             'email': user.email,
             'role': user.role,
+            'caterer_id': user.caterer_id,
             'member_since': format_datetime(user.created_at)
         }
     }), 200
@@ -122,5 +125,6 @@ def get_current_user():
         'name': user.name,
         'email': user.email,
         'role': user.role,
+        'caterer_id': user.caterer_id,
         'member_since': format_datetime(user.created_at)
     }), 200
