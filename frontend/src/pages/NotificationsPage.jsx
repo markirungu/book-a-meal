@@ -14,7 +14,7 @@ const NotificationsPage = () => {
   const [page, setPage] = useState(1);
   const [showAll, setShowAll] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = 'https://book-a-meal-backend.onrender.com';
 
   const fetchNotifications = async () => {
     setLoading(true);
