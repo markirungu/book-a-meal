@@ -26,7 +26,12 @@ def create_app(test_config=None):
 
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app)
+    CORS(app, origins=[
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'https://book-a-meal-gray.vercel.app',
+        'https://book-a-meal.vercel.app'
+    ])
     mail.init_app(app)
     migrate.init_app(app, db)
 
