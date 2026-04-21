@@ -83,11 +83,10 @@ def create_app(test_config=None):
         if not user:
             return {"error": "User not found"}, 404
         
-        # Create caterer if needed (NO email field)
+        # Create caterer if needed (ONLY name field)
         if not user.caterer_id:
             caterer = Caterer(
-                name=f"{user.name}'s Kitchen",
-                phone="0700000000"
+                name=f"{user.name}'s Kitchen"
             )
             db.session.add(caterer)
             db.session.flush()
