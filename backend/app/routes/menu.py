@@ -4,7 +4,9 @@ from datetime import date
 from sqlalchemy import desc
 from app import db
 from app.models.user import User
-from app.models.meal import Meal, Menu
+from app.models.meals import Meal, Menu, MenuItem
+from app.models.notification import Notification
+from app.utils.validators import parse_int, parse_iso_date, parse_iso_datetime
 
 menus_bp = Blueprint('menus', __name__)
 
@@ -22,13 +24,11 @@ def paginate_query(query, page, per_page):
 
     return {
         'items': items,
-        'pagination': {
+        'meta': {
             'page': page,
             'per_page': per_page,
             'total': total,
-            'total_pages': total_pages,
-            'has_next': page < total_pages,
-            'has_prev': page > 1
+            'pages': total_pages
         }
     }
 
@@ -85,25 +85,52 @@ def create_menu():
         return err
 
     data = request.get_json()
+    
+    # Use person3's validation (more thorough)
     is_valid, errors = validate_menu_data(data)
     if not is_valid:
         return jsonify({'error': 'Validation failed', 'details': errors}), 400
 
-    menu_date_str = data.get('date')       # expected: "YYYY-MM-DD"
-    meal_ids = data.get('meal_ids', [])    # list of meal IDs to include
+    menu_date_str = data.get('date')
+    meal_ids = data.get('meal_ids', [])
+    special_meal_ids = set(data.get('special_meal_ids', []))
 
     menu_date = date.fromisoformat(menu_date_str)
 
-    # Only one menu allowed per day
-    if Menu.query.filter_by(date=menu_date).first():
+    existing = Menu.query.filter_by(date=menu_date, caterer_id=user.caterer_id).first()
+    if existing:
         return jsonify({'error': f'A menu for {menu_date_str} already exists'}), 409
 
     meals = Meal.query.filter(Meal.id.in_(meal_ids)).all()
     if len(meals) != len(meal_ids):
         return jsonify({'error': 'Some meal_ids are invalid'}), 404
 
-    menu = Menu(date=menu_date, created_by=user.id, meals=meals)
+    cutoff_time = parse_iso_datetime(data.get('cutoff_time')) if data.get('cutoff_time') else None
+
+    menu = Menu(
+        date=menu_date,
+        created_by=user.id,
+        caterer_id=user.caterer_id,
+        cutoff_time=cutoff_time,
+        is_published=bool(data.get('is_published', True)),
+    )
     db.session.add(menu)
+
+    db.session.flush()
+    for meal in meals:
+        db.session.add(MenuItem(menu_id=menu.id, meal_id=meal.id, is_special=meal.id in special_meal_ids))
+
+    # ✅ YOUR NOTIFICATION CODE - KEPT!
+    if menu.is_published:
+        customers = User.query.filter_by(role='customer').all()
+        for customer in customers:
+            db.session.add(Notification(
+                user_id=customer.id,
+                title='Daily Menu Published 🍽️',
+                message=f'The menu for {menu.date.isoformat()} is now available. Check out today\'s specials!',
+                notification_type='menu',
+            ))
+
     db.session.commit()
 
     return jsonify({'message': 'Menu created', 'menu': menu.to_dict()}), 201
@@ -131,13 +158,18 @@ def get_menus():
         except ValueError:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
+    # Filter by caterer
+    caterer_id = parse_int(request.args.get('caterer_id'))
+    if caterer_id:
+        query = query.filter_by(caterer_id=caterer_id)
+
     query = query.order_by(desc(Menu.date))
 
     result = paginate_query(query, page, per_page)
 
     return jsonify({
-        'menus': [m.to_dict() for m in result['items']],
-        'pagination': result['pagination']
+        'data': [m.to_dict() for m in result['items']],
+        'meta': result['meta']
     }), 200
 
 
@@ -145,7 +177,11 @@ def get_menus():
 @menus_bp.route('/today', methods=['GET'])
 @jwt_required()
 def get_todays_menu():
-    menu = Menu.query.filter_by(date=date.today()).first()
+    caterer_id = parse_int(request.args.get('caterer_id'))
+    query = Menu.query.filter_by(date=date.today(), is_published=True)
+    if caterer_id:
+        query = query.filter_by(caterer_id=caterer_id)
+    menu = query.first()
     if not menu:
         return jsonify({'error': 'No menu set for today'}), 404
     return jsonify(menu.to_dict()), 200
@@ -159,7 +195,7 @@ def get_menu(menu_id):
     return jsonify(menu.to_dict()), 200
 
 
-# ── PUT /menus/<id>  — admin updates a menu (swap meals or change date) ─────
+# ── PUT /menus/<id>  — admin updates a menu ─────────────────────────────────
 @menus_bp.route('/<int:menu_id>', methods=['PUT'])
 @jwt_required()
 def update_menu(menu_id):
@@ -168,6 +204,9 @@ def update_menu(menu_id):
         return err
 
     menu = Menu.query.get_or_404(menu_id)
+    if menu.caterer_id and user.caterer_id and menu.caterer_id != user.caterer_id:
+        return jsonify({'error': 'Cannot modify another caterer\'s menu'}), 403
+
     data = request.get_json()
 
     is_valid, errors = validate_menu_data(data, is_update=True)
@@ -177,15 +216,39 @@ def update_menu(menu_id):
     if 'date' in data:
         new_date = date.fromisoformat(data['date'])
         # Check uniqueness only if date is actually changing
-        if new_date != menu.date and Menu.query.filter_by(date=new_date).first():
+        existing = Menu.query.filter_by(date=new_date, caterer_id=menu.caterer_id).first()
+        if new_date != menu.date and existing:
             return jsonify({'error': f'A menu for {data["date"]} already exists'}), 409
         menu.date = new_date
 
+    if 'cutoff_time' in data:
+        cutoff = parse_iso_datetime(data.get('cutoff_time')) if data.get('cutoff_time') else None
+        menu.cutoff_time = cutoff
+
+    if 'is_published' in data:
+        was_published = menu.is_published
+        menu.is_published = bool(data.get('is_published'))
+        
+        # ✅ YOUR NOTIFICATION CODE - Send if newly published
+        if menu.is_published and not was_published:
+            customers = User.query.filter_by(role='customer').all()
+            for customer in customers:
+                db.session.add(Notification(
+                    user_id=customer.id,
+                    title='Menu Updated 🔄',
+                    message=f'The menu for {menu.date.isoformat()} has been updated. Check out the changes!',
+                    notification_type='menu',
+                ))
+
     if 'meal_ids' in data:
-        meals = Meal.query.filter(Meal.id.in_(data['meal_ids'])).all()
-        if len(meals) != len(data['meal_ids']):
+        meal_ids = data.get('meal_ids', [])
+        special_meal_ids = set(data.get('special_meal_ids', []))
+        meals = Meal.query.filter(Meal.id.in_(meal_ids)).all()
+        if len(meals) != len(meal_ids):
             return jsonify({'error': 'Some meal_ids are invalid'}), 404
-        menu.meals = meals
+        MenuItem.query.filter_by(menu_id=menu.id).delete()
+        for meal in meals:
+            db.session.add(MenuItem(menu_id=menu.id, meal_id=meal.id, is_special=meal.id in special_meal_ids))
 
     db.session.commit()
     return jsonify({'message': 'Menu updated', 'menu': menu.to_dict()}), 200
@@ -200,31 +263,9 @@ def delete_menu(menu_id):
         return err
 
     menu = Menu.query.get_or_404(menu_id)
-    db.session.delete(menu)
-    db.session.commit()
-    return jsonify({'message': 'Menu deleted'}), 200
-            return jsonify({'error': f'A menu for {data["date"]} already exists'}), 409
-        menu.date = new_date
+    if menu.caterer_id and user.caterer_id and menu.caterer_id != user.caterer_id:
+        return jsonify({'error': 'Cannot delete another caterer\'s menu'}), 403
 
-    if 'meal_ids' in data:
-        meals = Meal.query.filter(Meal.id.in_(data['meal_ids'])).all()
-        if not meals:
-            return jsonify({'error': 'No valid meals found for the given meal_ids'}), 404
-        menu.meals = meals
-
-    db.session.commit()
-    return jsonify({'message': 'Menu updated', 'menu': menu.to_dict()}), 200
-
-
-# ── DELETE /menus/<id>  — admin deletes a menu ──────────────────────────────
-@menus_bp.route('/<int:menu_id>', methods=['DELETE'])
-@jwt_required()
-def delete_menu(menu_id):
-    user, err = admin_required()
-    if err:
-        return err
-
-    menu = Menu.query.get_or_404(menu_id)
     db.session.delete(menu)
     db.session.commit()
     return jsonify({'message': 'Menu deleted'}), 200
