@@ -78,16 +78,15 @@ def create_app(test_config=None):
         from app.models.meals import Menu
         
         user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        user = User.query.get(int(user_id))
         
         if not user:
             return {"error": "User not found"}, 404
         
-        # Create caterer if needed
+        # Create caterer if needed (NO email field)
         if not user.caterer_id:
             caterer = Caterer(
                 name=f"{user.name}'s Kitchen",
-                email=user.email,
                 phone="0700000000"
             )
             db.session.add(caterer)
