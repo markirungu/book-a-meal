@@ -36,6 +36,9 @@ def create_app(test_config=None):
     migrate.init_app(app, db)
 
     with app.app_context():
+        # ✅ CREATE TABLES AUTOMATICALLY
+        db.create_all()
+        
         from app.models import user
         from app.models import order
         from app.models import caterer
