@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -69,5 +69,42 @@ def create_app(test_config=None):
             return {"message": "Database tables dropped and recreated successfully"}, 200
         except Exception as e:
             return {"error": str(e)}, 500
+
+    @app.route("/fix-caterer", methods=["GET"])
+    @jwt_required()
+    def fix_caterer():
+        from app.models.caterer import Caterer
+        from app.models.user import User
+        from app.models.meals import Menu
+        
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        
+        if not user:
+            return {"error": "User not found"}, 404
+        
+        # Create caterer if needed
+        if not user.caterer_id:
+            caterer = Caterer(
+                name=f"{user.name}'s Kitchen",
+                email=user.email,
+                phone="0700000000"
+            )
+            db.session.add(caterer)
+            db.session.flush()
+            user.caterer_id = caterer.id
+        
+        # Fix any menus without caterer
+        menus = Menu.query.filter_by(caterer_id=None).all()
+        for menu in menus:
+            menu.caterer_id = user.caterer_id
+        
+        db.session.commit()
+        
+        return {
+            "message": "Caterer fixed", 
+            "caterer_id": user.caterer_id, 
+            "menus_updated": len(menus)
+        }, 200
 
     return app
