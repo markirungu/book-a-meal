@@ -52,8 +52,11 @@ function HomePage() {
             <Link to="/notifications" className="site-nav__link">Notifications</Link>
             {isAdmin && <Link to="/admin/dashboard" className="site-nav__link">Dashboard</Link>}
             {isAdmin && <Link to="/admin/meals" className="site-nav__link">Manage Meals</Link>}
-            <Link to="/login" className="site-nav__link">Login</Link>
-            <Link to="/register" className="button button--primary button--small">Register</Link>
+            
+            {/* ✅ FIXED: Only show Login/Register when NOT logged in */}
+            {!token && <Link to="/login" className="site-nav__link">Login</Link>}
+            {!token && <Link to="/register" className="button button--primary button--small">Register</Link>}
+            
             {token && (
               <button
                 onClick={() => {
@@ -158,8 +161,10 @@ function HomePage() {
             <Link to="/notifications" className="site-footer__link">Notifications</Link>
             {isAdmin && <Link to="/admin/dashboard" className="site-footer__link">Dashboard</Link>}
             {isAdmin && <Link to="/admin/meals" className="site-footer__link">Manage Meals</Link>}
-            <Link to="/login" className="site-footer__link">Login</Link>
-            <Link to="/register" className="site-footer__link">Register</Link>
+            
+            {/* ✅ FIXED: Only show when NOT logged in */}
+            {!token && <Link to="/login" className="site-footer__link">Login</Link>}
+            {!token && <Link to="/register" className="site-footer__link">Register</Link>}
           </nav>
           <p className="site-footer__text">© 2026 DishDash</p>
         </div>
