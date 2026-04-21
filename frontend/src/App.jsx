@@ -48,7 +48,21 @@ function AppShell({ children }) {
             <Link to="/orders" className="site-nav__link">Orders</Link>
             <Link to="/notifications" className="site-nav__link">Notifications</Link>
             {isAdmin && <Link to="/admin/dashboard" className="site-nav__link">Dashboard</Link>}
-            {isAdmin && <Link to="/admin/meals" className="site-nav__link">Manage Meals</Link>}
+            
+            {/* ✅ FIXED: Manage Meals link with hard navigation */}
+            {isAdmin && (
+              <a 
+                href="/admin/meals" 
+                className="site-nav__link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = '/admin/meals';
+                }}
+              >
+                Manage Meals
+              </a>
+            )}
+            
             {!token && <Link to="/login" className="site-nav__link">Login</Link>}
             {!token && <Link to="/register" className="site-nav__link">Register</Link>}
             {token && (
