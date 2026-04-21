@@ -37,11 +37,12 @@ def create_app(test_config=None):
 
     with app.app_context():
         from app.models import user
+        from app.models import order
         from app.models import caterer
         from app.models import meals
-        from app.models import order
         from app.models import refund
         from app.models import notification
+        
         from app.routes.auth import auth_bp
         from app.routes.caterers import caterers_bp
         from app.routes.meals import meals_bp
