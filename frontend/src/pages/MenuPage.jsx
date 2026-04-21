@@ -11,8 +11,8 @@ function MenuPage() {
   const { items: cartItems } = useSelector((state) => state.cart)
   const [feedback, setFeedback] = useState('')
   const [activeFilter, setActiveFilter] = useState('All')
-  const token = localStorage.getItem('token')
-  const role = localStorage.getItem('role')
+  const token = sessionStorage.getItem('token')
+  const role = sessionStorage.getItem('role')
   const isGuest = !token || role === 'guest'
   const mealFallbackImages = useMemo(() => ([
     'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',

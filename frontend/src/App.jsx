@@ -14,8 +14,8 @@ import HomePage from './pages/HomePage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function AppShell({ children }) {
-  const token = localStorage.getItem('token')
-  const role = localStorage.getItem('role')
+  const token = sessionStorage.getItem('token')
+  const role = sessionStorage.getItem('role')
   const isAdmin = token && role === 'admin'
   const { items } = useSelector((state) => state.cart)
   const cartCount = items.reduce((total, item) => total + item.quantity, 0)
@@ -75,8 +75,8 @@ function AppShell({ children }) {
             {token && (
               <button
                 onClick={() => {
-                  localStorage.removeItem('token')
-                  localStorage.removeItem('role')
+                  sessionStorage.removeItem('token')
+                  sessionStorage.removeItem('role')
                   window.location.href = '/login'
                 }}
                 className="button button--primary button--small"

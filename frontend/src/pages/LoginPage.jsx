@@ -40,14 +40,14 @@ function LoginPage() {
 
       const role = backendRole === 'customer' ? 'user' : backendRole
 
-      localStorage.setItem('token', accessToken)
-      localStorage.setItem('role', role)
-      localStorage.setItem('userEmail', response.data?.user?.email || email)
+      sessionStorage.setItem('token', accessToken)
+      sessionStorage.setItem('role', role)
+      sessionStorage.setItem('userEmail', response.data?.user?.email || email)
 
-      const guestCartRaw = localStorage.getItem('dishdash_cart_guest')
-      const userCartRaw = localStorage.getItem('dishdash_cart_user')
+      const guestCartRaw = sessionStorage.getItem('dishdash_cart_guest')
+      const userCartRaw = sessionStorage.getItem('dishdash_cart_user')
       if (guestCartRaw && !userCartRaw) {
-        localStorage.setItem('dishdash_cart_user', guestCartRaw)
+        sessionStorage.setItem('dishdash_cart_user', guestCartRaw)
       }
 
       navigate(backendRole === 'admin' ? '/admin/meals' : '/menu')
@@ -59,8 +59,8 @@ function LoginPage() {
   }
 
   const continueAsGuest = () => {
-    localStorage.removeItem('token')
-    localStorage.setItem('role', 'guest')
+    sessionStorage.removeItem('token')
+    sessionStorage.setItem('role', 'guest')
     navigate('/menu')
   }
 

@@ -9,7 +9,7 @@ function OrdersPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { active, history, loading, error } = useSelector((state) => state.orders)
-  const role = localStorage.getItem('role')
+  const role = sessionStorage.getItem('role')
   const [feedback, setFeedback] = useState('')
   const currentOrder = active.find((order) => ['pending', 'preparing'].includes(order.status)) || active[0] || null
   const historyOrders = currentOrder ? history.filter((order) => order.id !== currentOrder.id) : history

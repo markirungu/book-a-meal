@@ -1,14 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const getCartStorageKey = () => {
-  const token = localStorage.getItem('token')
-  const role = localStorage.getItem('role')
+  const token = sessionStorage.getItem('token')
+  const role = sessionStorage.getItem('role')
   return !token || role === 'guest' ? 'dishdash_cart_guest' : 'dishdash_cart_user'
 }
 
 const readStoredCart = () => {
   try {
-    const raw = localStorage.getItem(getCartStorageKey())
+    const raw = sessionStorage.getItem(getCartStorageKey())
     const parsed = raw ? JSON.parse(raw) : []
     return Array.isArray(parsed) ? parsed : []
   } catch {
@@ -17,7 +17,7 @@ const readStoredCart = () => {
 }
 
 const persistCart = (items) => {
-  localStorage.setItem(getCartStorageKey(), JSON.stringify(items))
+  sessionStorage.setItem(getCartStorageKey(), JSON.stringify(items))
 }
 
 const cartSlice = createSlice({

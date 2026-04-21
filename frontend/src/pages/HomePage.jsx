@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 function HomePage() {
-  const token = localStorage.getItem('token')
-  const role = localStorage.getItem('role')
+  const token = sessionStorage.getItem('token')
+  const role = sessionStorage.getItem('role')
   const isAdmin = token && role === 'admin'
   const isCustomer = token && (role === 'user' || role === 'customer')
   const { items } = useSelector((state) => state.cart)
@@ -67,8 +67,8 @@ function HomePage() {
             {token && (
               <button
                 onClick={() => {
-                  localStorage.removeItem('token')
-                  localStorage.removeItem('role')
+                  sessionStorage.removeItem('token')
+                  sessionStorage.removeItem('role')
                   window.location.href = '/login'
                 }}
                 className="button button--secondary button--small"
