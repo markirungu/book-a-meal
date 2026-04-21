@@ -20,7 +20,6 @@ function AppShell({ children }) {
   const { items } = useSelector((state) => state.cart)
   const cartCount = items.reduce((total, item) => total + item.quantity, 0)
   
-  // ✅ ADDED: Get user from Redux
   const { user } = useSelector((state) => state.auth)
 
   return (
@@ -29,7 +28,6 @@ function AppShell({ children }) {
         <div className="site-header__inner">
           <Link to="/" className="site-logo">DishDash</Link>
           
-          {/* ✅ ADDED: Welcome message */}
           {user && (
             <span className="welcome-message">
               Hi, {user.name || user.email}!
@@ -39,17 +37,25 @@ function AppShell({ children }) {
           <nav className="site-nav" aria-label="Main navigation">
             <Link to="/" className="site-nav__link">Home</Link>
             <Link to="/menu" className="site-nav__link">Menu</Link>
-            <Link to="/checkout" className="site-nav__link site-nav__link--cart">
-              Cart
-              <span className="cart-badge" aria-label={`${cartCount} items in cart`}>
-                {cartCount}
-              </span>
-            </Link>
-            <Link to="/orders" className="site-nav__link">Orders</Link>
-            <Link to="/notifications" className="site-nav__link">Notifications</Link>
+            
+            {/* ✅ Cart - Hidden for Admin */}
+            {!isAdmin && token && (
+              <Link to="/checkout" className="site-nav__link site-nav__link--cart">
+                Cart
+                <span className="cart-badge" aria-label={`${cartCount} items in cart`}>
+                  {cartCount}
+                </span>
+              </Link>
+            )}
+            
+            {/* ✅ Orders - Customers & Admin only */}
+            {token && <Link to="/orders" className="site-nav__link">Orders</Link>}
+            
+            {/* ✅ Notifications - Customers & Admin only */}
+            {token && <Link to="/notifications" className="site-nav__link">Notifications</Link>}
+            
             {isAdmin && <Link to="/admin/dashboard" className="site-nav__link">Dashboard</Link>}
             
-            {/* ✅ FIXED: Manage Meals link with hard navigation */}
             {isAdmin && (
               <a 
                 href="/admin/meals" 
@@ -65,6 +71,7 @@ function AppShell({ children }) {
             
             {!token && <Link to="/login" className="site-nav__link">Login</Link>}
             {!token && <Link to="/register" className="site-nav__link">Register</Link>}
+            
             {token && (
               <button
                 onClick={() => {
@@ -90,13 +97,17 @@ function AppShell({ children }) {
           <nav className="site-footer__nav" aria-label="Footer navigation">
             <Link to="/" className="site-footer__link">Home</Link>
             <Link to="/menu" className="site-footer__link">Menu</Link>
-            <Link to="/checkout" className="site-footer__link">Checkout</Link>
-            <Link to="/orders" className="site-footer__link">Orders</Link>
-            <Link to="/notifications" className="site-footer__link">Notifications</Link>
+            
+            {/* ✅ Footer Cart - Hidden for Admin */}
+            {!isAdmin && token && <Link to="/checkout" className="site-footer__link">Checkout</Link>}
+            
+            {token && <Link to="/orders" className="site-footer__link">Orders</Link>}
+            {token && <Link to="/notifications" className="site-footer__link">Notifications</Link>}
             {isAdmin && <Link to="/admin/dashboard" className="site-footer__link">Dashboard</Link>}
             {isAdmin && <Link to="/admin/meals" className="site-footer__link">Manage Meals</Link>}
-            <Link to="/login" className="site-footer__link">Login</Link>
-            <Link to="/register" className="site-footer__link">Register</Link>
+            
+            {!token && <Link to="/login" className="site-footer__link">Login</Link>}
+            {!token && <Link to="/register" className="site-footer__link">Register</Link>}
           </nav>
         </div>
       </footer>
@@ -108,14 +119,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public pages */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify/:token" element={<VerifyEmailPage />} />
         <Route path="/auth/verify/:token" element={<VerifyEmailPage />} />
 
-        {/* Customer pages */}
         <Route path="/menu" element={
           <ProtectedRoute allowGuest>
             <AppShell>
@@ -145,7 +154,6 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* Admin pages */}
         <Route path="/admin/dashboard" element={
           <ProtectedRoute adminOnly>
             <AppShell>
@@ -162,7 +170,6 @@ function App() {
         } />
 
         <Route path="/" element={<HomePage />} />
-
         <Route path="*" element={<HomePage />} />
       </Routes>
     </BrowserRouter>
