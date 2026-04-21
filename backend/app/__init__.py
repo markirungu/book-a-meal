@@ -37,7 +37,6 @@ def create_app(test_config=None):
 
     with app.app_context():
         from app.models import user
-        from app.models import meal
         from app.models import order
         from app.models import caterer
         from app.models import meals
