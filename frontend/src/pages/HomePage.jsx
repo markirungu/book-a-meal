@@ -5,6 +5,7 @@ function HomePage() {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
   const isAdmin = token && role === 'admin'
+  const isCustomer = token && (role === 'user' || role === 'customer')
   const { items } = useSelector((state) => state.cart)
   const cartCount = items.reduce((total, item) => total + item.quantity, 0)
   const featuredMeals = [
@@ -42,18 +43,24 @@ function HomePage() {
           <nav className="site-nav" aria-label="Main navigation">
             <Link to="/" className="site-nav__link">Home</Link>
             <Link to="/menu" className="site-nav__link">Menu</Link>
-            <Link to="/checkout" className="site-nav__link site-nav__link--cart">
-              Cart
-              <span className="cart-badge" aria-label={`${cartCount} items in cart`}>
-                {cartCount}
-              </span>
-            </Link>
-            <Link to="/orders" className="site-nav__link">Orders</Link>
-            <Link to="/notifications" className="site-nav__link">Notifications</Link>
+            
+            {/* ✅ Cart - Only for customers, not admin */}
+            {isCustomer && (
+              <Link to="/checkout" className="site-nav__link site-nav__link--cart">
+                Cart
+                <span className="cart-badge" aria-label={`${cartCount} items in cart`}>
+                  {cartCount}
+                </span>
+              </Link>
+            )}
+            
+            {/* ✅ Orders & Notifications - Only when logged in */}
+            {token && <Link to="/orders" className="site-nav__link">Orders</Link>}
+            {token && <Link to="/notifications" className="site-nav__link">Notifications</Link>}
+            
             {isAdmin && <Link to="/admin/dashboard" className="site-nav__link">Dashboard</Link>}
             {isAdmin && <Link to="/admin/meals" className="site-nav__link">Manage Meals</Link>}
             
-            {/* ✅ FIXED: Only show Login/Register when NOT logged in */}
             {!token && <Link to="/login" className="site-nav__link">Login</Link>}
             {!token && <Link to="/register" className="button button--primary button--small">Register</Link>}
             
@@ -157,12 +164,14 @@ function HomePage() {
           <nav className="site-footer__nav" aria-label="Footer navigation">
             <Link to="/" className="site-footer__link">Home</Link>
             <Link to="/menu" className="site-footer__link">Menu</Link>
-            <Link to="/orders" className="site-footer__link">Orders</Link>
-            <Link to="/notifications" className="site-footer__link">Notifications</Link>
+            
+            {isCustomer && <Link to="/checkout" className="site-footer__link">Checkout</Link>}
+            {token && <Link to="/orders" className="site-footer__link">Orders</Link>}
+            {token && <Link to="/notifications" className="site-footer__link">Notifications</Link>}
+            
             {isAdmin && <Link to="/admin/dashboard" className="site-footer__link">Dashboard</Link>}
             {isAdmin && <Link to="/admin/meals" className="site-footer__link">Manage Meals</Link>}
             
-            {/* ✅ FIXED: Only show when NOT logged in */}
             {!token && <Link to="/login" className="site-footer__link">Login</Link>}
             {!token && <Link to="/register" className="site-footer__link">Register</Link>}
           </nav>
