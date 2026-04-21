@@ -36,7 +36,8 @@ def test_register_success(client):
         })
     assert response.status_code == 201
     data = json.loads(response.data)
-    assert 'verification_token' in data
+    assert 'message' in data
+    assert 'Registration successful' in data['message']
 
 def test_register_missing_fields(client):
     response = client.post('/auth/register',
@@ -76,14 +77,19 @@ def test_login_unverified_user(client):
     assert response.status_code == 403
 
 def test_login_verified_user(client):
-    reg_response = client.post('/auth/register',
+    # Register user
+    client.post('/auth/register',
         json={
             'name': 'Test User',
             'email': 'test@example.com',
             'password': 'password123',
             'role': 'customer'
         })
-    token = json.loads(reg_response.data)['verification_token']
+    
+    # Get token directly from database
+    from app.models.user import User
+    user = User.query.filter_by(email='test@example.com').first()
+    token = user.verification_token
     client.get(f'/auth/verify/{token}')
     
     response = client.post('/auth/login',
@@ -96,14 +102,19 @@ def test_login_verified_user(client):
     assert 'access_token' in data
 
 def test_login_wrong_password(client):
-    reg_response = client.post('/auth/register',
+    # Register user
+    client.post('/auth/register',
         json={
             'name': 'Test User',
             'email': 'test@example.com',
             'password': 'password123',
             'role': 'customer'
         })
-    token = json.loads(reg_response.data)['verification_token']
+    
+    # Get token directly from database
+    from app.models.user import User
+    user = User.query.filter_by(email='test@example.com').first()
+    token = user.verification_token
     client.get(f'/auth/verify/{token}')
     
     response = client.post('/auth/login',
@@ -133,15 +144,18 @@ def test_register_invalid_role_defaults_to_customer(client):
     assert response.status_code == 201
 
 def test_me_endpoint_with_valid_token(client):
-    """GET /auth/me returns current user with valid token"""
-    # Register and verify
-    reg = client.post('/auth/register',
+    # Register user
+    client.post('/auth/register',
         json={
             'name': 'Me Test',
             'email': 'me_test@example.com',
             'password': 'password123'
         })
-    token = json.loads(reg.data)['verification_token']
+    
+    # Get token directly from database
+    from app.models.user import User
+    user = User.query.filter_by(email='me_test@example.com').first()
+    token = user.verification_token
     client.get(f'/auth/verify/{token}')
     
     # Login to get token
