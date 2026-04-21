@@ -1,24 +1,32 @@
 import axios from 'axios'
 
-const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
-const API_URL = viteEnv.VITE_API_URL || 'http://127.0.0.1:5000'
+const API_URL = 'https://book-a-meal-backend.onrender.com'
 
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+const register = async (userData) => {
+  const response = await axios.post(`${API_URL}/auth/register`, userData)
+  return response.data
+}
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+const login = async (credentials) => {
+  const response = await axios.post(`${API_URL}/auth/login`, credentials)
+  return response.data
+}
 
-export const registerUser = (data) => api.post('/auth/register', data)
-export const loginUser = (data) => api.post('/auth/login', data)
-export const verifyEmail = (token) => api.get(`/auth/verify/${token}`)
-export const getCurrentUser = () => api.get('/auth/me')
+const verifyEmail = async (token) => {
+  const response = await axios.get(`${API_URL}/auth/verify/${token}`)
+  return response.data
+}
+
+const getCurrentUser = async (token) => {
+  const response = await axios.get(`${API_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export default {
+  register,
+  login,
+  verifyEmail,
+  getCurrentUser
+}
