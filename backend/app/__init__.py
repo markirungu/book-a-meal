@@ -36,9 +36,6 @@ def create_app(test_config=None):
     migrate.init_app(app, db)
 
     with app.app_context():
-        # ✅ CREATE TABLES AUTOMATICALLY
-        db.create_all()
-        
         from app.models import user
         from app.models import order
         from app.models import caterer
@@ -63,5 +60,14 @@ def create_app(test_config=None):
     @app.route("/")
     def index():
         return {"message": "Book-A-Meal API is running"}, 200
+
+    @app.route("/setup-db", methods=["GET"])
+    def setup_db():
+        try:
+            db.drop_all()
+            db.create_all()
+            return {"message": "Database tables dropped and recreated successfully"}, 200
+        except Exception as e:
+            return {"error": str(e)}, 500
 
     return app
