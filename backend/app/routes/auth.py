@@ -40,27 +40,35 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    # UPDATED: Skip email sending in test mode
+    # Send verification email
     try:
         if not current_app.config.get('TESTING', False):
+            frontend_url = current_app.config.get('FRONTEND_URL', 'https://book-a-meal-gray.vercel.app')
+            verification_link = f"{frontend_url}/verify/{verification_token}"
+            
             msg = Message(
                 subject='Verify your Book-A-Meal account',
                 sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@bookmeal.com'),
                 recipients=[email]
             )
-            # Use FRONTEND_URL from config if available, fallback to localhost
-            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
-            msg.body = f'Click the link to verify your account: {frontend_url}/auth/verify/{verification_token}'
+            msg.body = f"""Welcome to Book-A-Meal!
+
+Please verify your email address by clicking the link below:
+{verification_link}
+
+This link will expire in 24 hours.
+
+If you didn't create an account, please ignore this email."""
             mail.send(msg)
             print(f"Verification email sent to {email}")
         else:
             print(f"[TEST MODE] Would send verification email to {email}")
     except Exception as e:
-        print(f"Email sending failed (non-blocking): {e}")
+        print(f"Email sending failed: {e}")
+        return jsonify({'error': 'Registration failed. Please try again.'}), 500
 
     return jsonify({
-        'message': 'Registration successful! Check your email to verify your account.',
-        'verification_token': verification_token  # Remove this in production
+        'message': 'Registration successful! Please check your email to verify your account.'
     }), 201
 
 
