@@ -19,12 +19,23 @@ function AppShell({ children }) {
   const isAdmin = token && role === 'admin'
   const { items } = useSelector((state) => state.cart)
   const cartCount = items.reduce((total, item) => total + item.quantity, 0)
+  
+  // ✅ ADDED: Get user from Redux
+  const { user } = useSelector((state) => state.auth)
 
   return (
     <div className="app-shell">
       <header className="site-header">
         <div className="site-header__inner">
           <Link to="/" className="site-logo">DishDash</Link>
+          
+          {/* ✅ ADDED: Welcome message */}
+          {user && (
+            <span className="welcome-message">
+              Hi, {user.name || user.email}!
+            </span>
+          )}
+          
           <nav className="site-nav" aria-label="Main navigation">
             <Link to="/" className="site-nav__link">Home</Link>
             <Link to="/menu" className="site-nav__link">Menu</Link>
@@ -38,8 +49,8 @@ function AppShell({ children }) {
             <Link to="/notifications" className="site-nav__link">Notifications</Link>
             {isAdmin && <Link to="/admin/dashboard" className="site-nav__link">Dashboard</Link>}
             {isAdmin && <Link to="/admin/meals" className="site-nav__link">Manage Meals</Link>}
-            <Link to="/login" className="site-nav__link">Login</Link>
-            <Link to="/register" className="site-nav__link">Register</Link>
+            {!token && <Link to="/login" className="site-nav__link">Login</Link>}
+            {!token && <Link to="/register" className="site-nav__link">Register</Link>}
             {token && (
               <button
                 onClick={() => {
